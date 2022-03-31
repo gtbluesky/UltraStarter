@@ -8,7 +8,7 @@ import com.gtbluesky.ultrastarter.task.Initializer
 
 class E: AppInitializer<Unit>() {
     override fun waitOnMainThread(): Boolean {
-        return true
+        return false
     }
 
     override fun dispatcherType(): DispatcherType {

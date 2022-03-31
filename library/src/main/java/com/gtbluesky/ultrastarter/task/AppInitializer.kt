@@ -1,6 +1,5 @@
 package com.gtbluesky.ultrastarter.task
 
-import android.util.Log
 import java.util.concurrent.CountDownLatch
 
 abstract class AppInitializer<T> : Initializer<T>, Dispatcher {
@@ -10,7 +9,7 @@ abstract class AppInitializer<T> : Initializer<T>, Dispatcher {
 
     override fun dependenciesCount() = dependencies()?.size ?: 0
 
-    override fun waitLatch() {
+    final override fun waitLatch() {
         try {
             countDownLatch?.await()
         } catch (e: Exception) {
@@ -18,7 +17,7 @@ abstract class AppInitializer<T> : Initializer<T>, Dispatcher {
         }
     }
 
-    override fun notifyLatch() {
+    final override fun notifyLatch() {
         countDownLatch?.countDown()
     }
 }

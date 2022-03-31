@@ -30,6 +30,6 @@ class J: AppInitializer<Unit>() {
     }
 
     override fun needPrivacyGrant(): Boolean {
-        return false
+        return true
     }
 }

@@ -29,9 +29,10 @@ class MyApplication : Application() {
             .add(J())
             .add(K())
             .setAwaitTimeout(3000)
+            .setPrivacyGrant(false)
             .build(applicationContext)
             .start()
             .await()
-        startService(Intent(this, ProcessService::class.java))
+//        startService(Intent(this, ProcessService::class.java))
     }
 }
