@@ -2,7 +2,7 @@ package com.gtbluesky.ultrastarter.task
 
 import android.content.Context
 
-interface Initializer<T> {
+internal interface Initializer<T> {
 
     fun create(context: Context): T
 
@@ -11,4 +11,14 @@ interface Initializer<T> {
     fun dependenciesCount(): Int
 
     fun needPrivacyGrant(): Boolean
+
+    fun waitLatch()
+
+    fun notifyLatch()
+
+    fun waitOnMainThread(): Boolean
+
+    fun dispatcherType(): DispatcherType
+
+    fun onlyOnMainProcess(): Boolean
 }

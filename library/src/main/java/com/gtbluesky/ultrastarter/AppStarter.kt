@@ -4,25 +4,32 @@ import android.content.Context
 import android.os.Looper
 import com.gtbluesky.ultrastarter.exception.StarterException
 import com.gtbluesky.ultrastarter.executor.ExecutorManager
+import com.gtbluesky.ultrastarter.listener.CompleteListener
+import com.gtbluesky.ultrastarter.log.StarterLog
 import com.gtbluesky.ultrastarter.task.AppInitializer
 import com.gtbluesky.ultrastarter.task.DispatcherType
+import com.gtbluesky.ultrastarter.task.Initializer
 import com.gtbluesky.ultrastarter.task.StarterRunnable
 import com.gtbluesky.ultrastarter.util.ProcessUtil
 import com.gtbluesky.ultrastarter.util.TaskSortUtil
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 class AppStarter private constructor(
     private val context: Context,
-    private val initializerList: List<AppInitializer<*>>,
+    private val initializerList: List<Initializer<*>>,
     private val awaitTimeout: Long,
     private val awaitCount: Int,
-    private val isPrivacyAllowed: Boolean
+    private val isPrivacyAllowed: Boolean,
+    private val listener: CompleteListener? = null
 ) {
 
     private var mainCountDownLatch: CountDownLatch? = null
-    private var privacyInitializerList = mutableListOf<AppInitializer<*>>()
-    private val childrenMap = mutableMapOf<AppInitializer<*>, MutableList<AppInitializer<*>>?>()
+    private var privacyInitializerList = mutableListOf<Initializer<*>>()
+    private val childrenMap = mutableMapOf<Initializer<*>, MutableList<Initializer<*>>?>()
+    private val completedCount = AtomicInteger()
+    private var startTime = 0L
 
     companion object {
         private const val AWAIT_TIMEOUT = 5000L
@@ -33,12 +40,13 @@ class AppStarter private constructor(
             if (!isPrivacyAllowed && it.needPrivacyGrant()) {
                 privacyInitializerList.add(it)
             }
-            it.dependencies()?.map { clz -> initializerList.first { it::class.java == clz }}?.forEach { dependence ->
-                if (childrenMap[dependence] == null) {
-                    childrenMap[dependence] = arrayListOf()
+            it.dependencies()?.map { clz -> initializerList.first { it::class.java == clz } }
+                ?.forEach { dependence ->
+                    if (childrenMap[dependence] == null) {
+                        childrenMap[dependence] = arrayListOf()
+                    }
+                    childrenMap[dependence]?.add(it)
                 }
-                childrenMap[dependence]?.add(it)
-            }
         }
     }
 
@@ -49,6 +57,7 @@ class AppStarter private constructor(
         if (mainCountDownLatch != null) {
             throw StarterException("start() is called repeatedly.")
         }
+        startTime = System.currentTimeMillis()
         mainCountDownLatch = if (awaitCount == 0) null else CountDownLatch(awaitCount)
         if (!isPrivacyAllowed) {
             initializerList.filter { !it.needPrivacyGrant() }
@@ -57,6 +66,7 @@ class AppStarter private constructor(
         }.let {
             dispatch(it)
         }
+        StarterLog.d("Main thread dispatch cost time = ${System.currentTimeMillis() - startTime}")
     }
 
     internal fun startPrivacyInitializers() {
@@ -66,7 +76,7 @@ class AppStarter private constructor(
         dispatch(privacyInitializerList)
     }
 
-    private fun dispatch(list: List<AppInitializer<*>>) {
+    private fun dispatch(list: List<Initializer<*>>) {
         TaskSortUtil.getTaskSort(list)?.forEach {
             val runnable = StarterRunnable(context, it, this)
             when (it.dispatcherType()) {
@@ -89,11 +99,16 @@ class AppStarter private constructor(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        StarterLog.d("Main thread wait cost time = ${System.currentTimeMillis() - startTime}")
     }
 
-    internal fun notifyChildren(initializer: AppInitializer<*>) {
+    internal fun notifyChildren(initializer: Initializer<*>) {
         childrenMap[initializer]?.forEach {
             it.notifyLatch()
+        }
+        val count = completedCount.incrementAndGet()
+        if (count == initializerList.size) {
+            listener?.onCompleted(System.currentTimeMillis() - startTime)
         }
     }
 
@@ -102,13 +117,14 @@ class AppStarter private constructor(
     }
 
     class Builder {
-        private val initializerList = arrayListOf<AppInitializer<*>>()
+        private val initializerClzList = arrayListOf<Class<out Initializer<*>>>()
         private var awaitTimeout = AWAIT_TIMEOUT
         private var isPrivacyAllowed = false
+        private var listener: CompleteListener? = null
 
-        fun add(initializer: AppInitializer<*>) = apply {
-            if (!initializerList.contains(initializer)) {
-                initializerList.add(initializer)
+        fun add(clazz: Class<out AppInitializer<*>>) = apply {
+            if (!initializerClzList.contains(clazz)) {
+                initializerClzList.add(clazz)
             }
         }
 
@@ -120,9 +136,18 @@ class AppStarter private constructor(
             this.isPrivacyAllowed = isAllowed
         }
 
+        fun setListener(listener: CompleteListener) = apply {
+            this.listener = listener
+        }
+
+        fun setLogEnabled(enabled: Boolean) = apply {
+            StarterLog.logEnabled = enabled
+        }
+
         fun build(context: Context): AppStarter {
             var awaitCount = 0
-            val currentProcessList = arrayListOf<AppInitializer<*>>()
+            val currentProcessList = arrayListOf<Initializer<*>>()
+            val initializerList = initializerClzList.map { it.newInstance() }
             if (ProcessUtil.isMainProcess(context)) {
                 currentProcessList.addAll(initializerList)
             } else {
@@ -138,7 +163,8 @@ class AppStarter private constructor(
                 currentProcessList,
                 awaitTimeout,
                 awaitCount,
-                isPrivacyAllowed
+                isPrivacyAllowed,
+                listener
             ).also {
                 AppStarterManager.putCache(it)
             }

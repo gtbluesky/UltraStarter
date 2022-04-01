@@ -1,12 +1,10 @@
 package com.gtbluesky.ultrastarter
 
 import android.content.Context
-import android.util.Log
 import com.gtbluesky.ultrastarter.task.AppInitializer
 import com.gtbluesky.ultrastarter.task.DispatcherType
-import com.gtbluesky.ultrastarter.task.Initializer
 
-class G: AppInitializer<Unit>() {
+class G : AppInitializer<Unit>() {
     override fun waitOnMainThread(): Boolean {
         return false
     }
@@ -20,12 +18,10 @@ class G: AppInitializer<Unit>() {
     }
 
     override fun create(context: Context) {
-        Log.d(G::class.java.simpleName, "start:${System.currentTimeMillis()}")
         Thread.sleep(500)
-        Log.d(G::class.java.simpleName, "end:${System.currentTimeMillis()}")
     }
 
-    override fun dependencies(): List<Class<out Initializer<*>>>? {
+    override fun dependencies(): List<Class<out AppInitializer<*>>>? {
         return listOf(E::class.java, F::class.java)
     }
 

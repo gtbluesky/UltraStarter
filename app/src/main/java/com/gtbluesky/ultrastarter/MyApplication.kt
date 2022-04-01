@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.gtbluesky.ultrastarter.listener.CompleteListener
 
 class MyApplication : Application() {
     companion object{
@@ -16,23 +17,31 @@ class MyApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        val a = System.currentTimeMillis()
         AppStarter.Builder()
-            .add(A())
-            .add(B())
-            .add(C())
-            .add(D())
-            .add(E())
-            .add(F())
-            .add(G())
-            .add(H())
-            .add(I())
-            .add(J())
-            .add(K())
+            .add(A::class.java)
+            .add(B::class.java)
+            .add(C::class.java)
+            .add(D::class.java)
+            .add(E::class.java)
+            .add(F::class.java)
+            .add(G::class.java)
+            .add(H::class.java)
+            .add(I::class.java)
+            .add(J::class.java)
+            .add(K::class.java)
             .setAwaitTimeout(3000)
-            .setPrivacyGrant(false)
+            .setPrivacyGrant(true)
+            .setLogEnabled(true)
+            .setListener(object : CompleteListener {
+                override fun onCompleted(costTime: Long) {
+                    Log.d(this@MyApplication::class.java.simpleName, "任务全部完成，总耗时costTime=$costTime")
+                }
+            })
             .build(applicationContext)
             .start()
             .await()
+        Log.d(this::class.java.simpleName, "appstarter cost=${System.currentTimeMillis() - a}")
 //        startService(Intent(this, ProcessService::class.java))
     }
 }

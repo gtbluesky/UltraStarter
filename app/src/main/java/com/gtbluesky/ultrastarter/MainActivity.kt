@@ -15,9 +15,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         Log.d(MainActivity::class.java.simpleName, "cost time=${System.currentTimeMillis() - MyApplication.startTime}")
-        Handler(Looper.getMainLooper()).postDelayed({
-            Log.d(this::class.java.simpleName, "allowPrivacyGrant")
-            AppStarterManager.allowPrivacy()
-        }, 5000)
+//        Handler(Looper.getMainLooper()).postDelayed({
+//            Log.d(this::class.java.simpleName, "allowPrivacyGrant")
+//            AppStarterManager.allowPrivacy()
+//        }, 5000)
     }
 }

@@ -8,8 +8,13 @@ import android.os.Process
 
 internal object ProcessUtil {
 
+    private var isMainProcess: Boolean? = null
+
     @JvmStatic
     fun isMainProcess(context: Context): Boolean {
+        isMainProcess?.let {
+            return it
+        }
         val packageName = context.packageName
         var processName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             Application.getProcessName()
@@ -19,7 +24,9 @@ internal object ProcessUtil {
         if (processName.isNullOrEmpty()) {
             processName = getProcessNameByActivityManager(context)
         }
-        return packageName == processName
+        return (packageName == processName).also {
+            isMainProcess = it
+        }
     }
 
     private fun getProcessNameByActivityThread(): String? {

@@ -7,9 +7,11 @@ object AppStarterManager {
         starterCacheSet.add(appStarter)
     }
 
+    @JvmStatic
     fun allowPrivacy() {
         starterCacheSet.forEach {
             it.startPrivacyInitializers()
         }
+        starterCacheSet.clear()
     }
 }
