@@ -5,6 +5,8 @@ import android.os.Process
 import com.gtbluesky.ultrastarter.AppStarter
 import com.gtbluesky.ultrastarter.annotation.ThreadPriority
 import com.gtbluesky.ultrastarter.log.StarterLog
+import com.gtbluesky.ultrastarter.needWaitOnMainThread
+import com.gtbluesky.ultrastarter.util.DateUtil
 
 internal class StarterRunnable(
     private val context: Context,
@@ -27,17 +29,18 @@ internal class StarterRunnable(
             StarterLog.e(initializer::class.java.simpleName, e)
         }
         val createTime = System.currentTimeMillis()
-        if (initializer.waitOnMainThread() && initializer.dispatcherType() != DispatcherType.Main) {
+        if (needWaitOnMainThread(initializer)) {
             starter.notifyMain()
         }
         starter.notifyChildren(initializer)
         val msgMap = mapOf(
-            "name" to initializer::class.java.simpleName,
-            "waitTime" to (waitTime - startTime),
-            "createTime" to (createTime - waitTime),
-            "notifyTime" to (System.currentTimeMillis() - createTime)
+            "Name" to initializer::class.java.simpleName,
+            "WaitDuration" to "${waitTime - startTime}ms",
+            "RunDuration" to "${createTime - waitTime}ms",
+            "StartTime" to DateUtil.getFormatTime(startTime),
+            "EndTime" to DateUtil.getCurrentFormatTime(),
+            "Thread" to Thread.currentThread().name
         )
         StarterLog.d(StarterLog.msgJoin(msgMap))
-        StarterLog.d("${initializer::class.java.simpleName} end")
     }
 }

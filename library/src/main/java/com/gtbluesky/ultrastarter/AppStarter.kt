@@ -77,20 +77,26 @@ class AppStarter private constructor(
     }
 
     private fun dispatch(list: List<Initializer<*>>) {
+        var mainIdleExecutor: ExecutorManager.IdleStarter? = null
         TaskSortUtil.getTaskSort(list)?.forEach {
             val runnable = StarterRunnable(context, it, this)
             when (it.dispatcherType()) {
                 DispatcherType.Main -> {
                     runnable.run()
                 }
+                DispatcherType.Idle -> {
+                    mainIdleExecutor = mainIdleExecutor ?: ExecutorManager.mainIdleExecutor
+                    mainIdleExecutor?.execute(runnable)
+                }
                 DispatcherType.Default -> {
-                    ExecutorManager.computeExecutor.submit(runnable)
+                    ExecutorManager.computeExecutor.execute(runnable)
                 }
                 DispatcherType.IO -> {
-                    ExecutorManager.ioExecutor.submit(runnable)
+                    ExecutorManager.ioExecutor.execute(runnable)
                 }
             }
         }
+        mainIdleExecutor?.start()
     }
 
     fun await() {
@@ -154,7 +160,7 @@ class AppStarter private constructor(
                 currentProcessList.addAll(initializerList.filter { !it.onlyOnMainProcess() })
             }
             currentProcessList.forEach {
-                if (it.waitOnMainThread() && it.dispatcherType() != DispatcherType.Main) {
+                if (needWaitOnMainThread(it)) {
                     ++awaitCount
                 }
             }
@@ -170,4 +176,8 @@ class AppStarter private constructor(
             }
         }
     }
+}
+
+internal fun needWaitOnMainThread(initializer: Initializer<*>): Boolean {
+    return initializer.waitOnMainThread() && (initializer.dispatcherType() == DispatcherType.Default || initializer.dispatcherType() == DispatcherType.IO)
 }

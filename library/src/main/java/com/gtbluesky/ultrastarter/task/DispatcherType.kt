@@ -6,6 +6,10 @@ enum class DispatcherType {
      */
     Main,
     /**
+     * 主线程空闲
+     */
+    Idle,
+    /**
      * 适用于CPU密集型任务
      */
     Default,

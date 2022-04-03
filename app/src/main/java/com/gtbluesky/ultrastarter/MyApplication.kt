@@ -30,6 +30,8 @@ class MyApplication : Application() {
             .add(I::class.java)
             .add(J::class.java)
             .add(K::class.java)
+            .add(L::class.java)
+            .add(M::class.java)
             .setAwaitTimeout(3000)
             .setPrivacyGrant(true)
             .setLogEnabled(true)

@@ -18,6 +18,6 @@ class MainActivity : AppCompatActivity() {
 //        Handler(Looper.getMainLooper()).postDelayed({
 //            Log.d(this::class.java.simpleName, "allowPrivacyGrant")
 //            AppStarterManager.allowPrivacy()
-//        }, 5000)
+//        }, 1000)
     }
 }
