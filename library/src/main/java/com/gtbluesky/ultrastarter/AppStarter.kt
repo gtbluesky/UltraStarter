@@ -54,6 +54,10 @@ class AppStarter private constructor(
         if (Looper.myLooper() != Looper.getMainLooper()) {
             throw StarterException("start() must be called in main thread.")
         }
+        if (initializerList.isEmpty()) {
+            StarterLog.d("initializerList is empty")
+            return@apply
+        }
         if (mainCountDownLatch != null) {
             throw StarterException("start() is called repeatedly.")
         }
